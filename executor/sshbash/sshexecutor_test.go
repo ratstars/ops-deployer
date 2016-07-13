@@ -110,3 +110,23 @@ func TestDestory(t *testing.T) {
 		return
 	}
 }
+
+func TestExecute(t *testing.T) {
+	ssh := &SshExecutor {
+		LoginInfo: &rightPasswordLoginInfo,
+	}
+	ssh.Init()
+	if false == ssh.IsLogin() {
+		t.Error("Expect Login Successful, but get failed result.")
+		return
+	}
+	resultSet, err := ssh.Execute("echo ABCD", 1)
+	if err != nil {
+		t.Error("Error Occures: ", err)
+		return
+	}
+	if len(resultSet) != 1 {
+		t.Error("Expect One Line Return")
+		return
+	}
+}
