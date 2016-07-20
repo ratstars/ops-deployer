@@ -53,10 +53,12 @@ type SshExecutor struct {
 	//是否已经登录, 执行Init成功之后, isLogin会变成true, 否则将为false
 	isLogin bool
 	//执行器的登录信息, 包括SSH登录需要的所有信息
-	LoginInfo *SSHLoginInfo
-	client    *ssh.Client
-	session   *ssh.Session
-	stdin     io.WriteCloser
+	LoginInfo     *SSHLoginInfo
+	client        *ssh.Client
+	session       *ssh.Session
+	stdin         io.WriteCloser
+	buff          MixWriterBuffer
+	prompt_notify chan int
 }
 
 //初始化SSH执行器
@@ -88,18 +90,25 @@ func (sshe *SshExecutor) Init() {
 		log.Println("ERROR: Failed to dial:", err)
 		return
 	}
-	
+
 	//创建执行SESSION
 	sshe.session, err = sshe.client.NewSession()
 	if err != nil {
 		sshe.clearSessionAndClientWhenError("Failed to create session: ", err)
 		return
 	}
-	prompt_notify := make(chan int)
-	defer close(prompt_notify)
-	var loginInfoBuffer singleRawWriterBuffer
-	sshe.session.Stdout = newDecoratorWriterForNofityer(&loginInfoBuffer, prompt_notify)
-	sshe.session.Stderr = &loginInfoBuffer
+	
+	//重定向输入输出
+	sshe.prompt_notify = make(chan int)
+	sshe.session.Stdout = newDecoratorWriterForNofityer(
+		&BufferWriter{
+			buff:       &sshe.buff,
+			resultFunc: commons.NewStdoutOutput,
+		}, sshe.prompt_notify)
+	sshe.session.Stderr = &BufferWriter{
+		buff:       &sshe.buff,
+		resultFunc: commons.NewStdoutOutput,
+	}
 	sshe.stdin, err = sshe.session.StdinPipe()
 	if err != nil {
 		sshe.clearSessionAndClientWhenError("Failed to get stdin from ssh client. ", err)
@@ -133,7 +142,7 @@ func (sshe *SshExecutor) Init() {
 		timeout <- 1
 	}()
 	select {
-	case <-prompt_notify:
+	case <-sshe.prompt_notify:
 	// do nothing
 	case <-timeout:
 		sshe.clearSessionAndClientWhenError("Shell not support, or start timeout. ", errors.New("Shell not support, or start timeout."))
@@ -142,7 +151,7 @@ func (sshe *SshExecutor) Init() {
 
 	//输入登录信息到log
 	log.Println("Login Infomation:")
-	log.Println(loginInfoBuffer.GetContent())
+	log.Println(sshe.buff.GetOutputSetAndClear())
 
 	//将isLogin设置为true
 	sshe.isLogin = true
@@ -174,6 +183,10 @@ func (sshe *SshExecutor) Destory() {
 		log.Println("ERROR: SSH Client not login.")
 		return
 	}
+	//清空buff和关闭通道
+	sshe.buff.GetOutputSetAndClear()
+	close(sshe.prompt_notify)
+	sshe.prompt_notify = nil
 	//销毁session
 	if sshe.session != nil {
 		err := sshe.session.Close()
@@ -197,21 +210,9 @@ func (sshe *SshExecutor) Execute(cmd string, timeout int) ([]commons.ResultOutpu
 	if false == sshe.IsLogin() {
 		return nil, errors.New("Client not login.")
 	}
-	//重定向输出
-	prompt_notify := make(chan int)
-	var mixBuff MixWriterBuffer
-	sshe.session.Stdout = newDecoratorWriterForNofityer(
-		&BufferWriter{
-			buff:       &mixBuff,
-			resultFunc: commons.NewStdoutOutput,
-		}, prompt_notify)
-	sshe.session.Stderr = &BufferWriter{
-		buff:       &mixBuff,
-		resultFunc: commons.NewStdoutOutput,
-	}
-	
+
 	//等待指令完成或超时
-	sshe.stdin.Write([]byte(cmd+"\n"))
+	sshe.stdin.Write([]byte(cmd + "\n"))
 	timeout_ch := make(chan int, 1)
 	go func() {
 		var st int64 = int64(time.Second)
@@ -220,14 +221,14 @@ func (sshe *SshExecutor) Execute(cmd string, timeout int) ([]commons.ResultOutpu
 		timeout_ch <- 1
 	}()
 	select {
-	case <-prompt_notify:
+	case <-sshe.prompt_notify:
 		// do nothing
 	case <-timeout_ch:
 		err := errors.New("Execute cmd timeout. ")
 		return nil, err
-	} 
+	}
 	//从输出中获取结果
-	return mixBuff.GetOutputSetAndClear(), nil
+	return sshe.buff.GetOutputSetAndClear(), nil
 }
 
 //SshExcutor是否完成了登录
@@ -365,9 +366,9 @@ func (w *BufferWriter) Write(p []byte) (int, error) {
 	for i, line := range sep {
 		if i < len(sep)-1 {
 			// 非最后一行
-			w.buff.Add(w.resultFunc(line), true)
+			w.buff.Add(w.resultFunc(strings.TrimRight(line, "\r")), true)
 		} else {
-			w.buff.Add(w.resultFunc(line), lastLineFinished)
+			w.buff.Add(w.resultFunc(strings.TrimRight(line, "\r")), lastLineFinished)
 		}
 	}
 	return len(p), nil

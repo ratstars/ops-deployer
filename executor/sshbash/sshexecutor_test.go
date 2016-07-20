@@ -129,4 +129,22 @@ func TestExecute(t *testing.T) {
 		t.Error("Expect One Line Return")
 		return
 	}
+	if resultSet[0].String() != "ABCD" {
+		t.Error("Expect get ABCD output, but result is:", resultSet[0].String(), len(resultSet[0].String()), resultSet[0].String()[0])
+		return
+	}
+	resultSet, err = ssh.Execute("cd", 1)
+	if err != nil {
+		t.Error("Error Occures: ", err)
+		return
+	}
+	if len(resultSet) != 0 {
+		t.Error("Expect Nothing Return")
+		return
+	}
+	ssh.Destory()
+	if true == ssh.IsLogin() {
+		t.Error("Expect Logout Successful Again, but get IsLogin() == true. ")
+		return
+	}
 }
