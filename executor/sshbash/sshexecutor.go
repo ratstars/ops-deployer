@@ -236,6 +236,11 @@ func (sshe *SshExecutor) IsLogin() bool {
 	return sshe.isLogin
 }
 
+// 和IsLogin相同, 但这个方法是executor.Executor接口的一个方法
+func (sshe *SshExecutor) IsReady() bool {
+	return sshe.IsLogin()
+}
+
 //singleRawWriterBuffer同一时间只允许一个携程进行写入, 同时不会对内容进行加工
 type singleRawWriterBuffer struct {
 	b  bytes.Buffer

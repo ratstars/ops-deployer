@@ -18,6 +18,20 @@ func TestIsLogin(t *testing.T) {
 	}
 }
 
+// 测试IsLogin是否可以正常返回
+func TestIsReady(t *testing.T) {
+	ssh := &SshExecutor {
+		LoginInfo: &SSHLoginInfo{
+			Ip:"localhost",
+			Username: "username",
+			Password: "password",
+		},
+	}
+	if ssh.IsReady() != false {
+		t.Error("Excpect ssh.IsLogin() is false")
+	}
+}
+
 // 测试如果输入一个空的LoginInfo的行为
 func TestInitEmptyLoginInfo(t *testing.T) {
 	ssh := &SshExecutor {}
@@ -80,6 +94,9 @@ func TestLoginWithKey(t *testing.T) {
 	ssh.Init()
 	if false == ssh.IsLogin() {
 		t.Error("Expect Login Successful, but get failed result.")
+	}
+	if false == ssh.IsReady() {
+		t.Error("Expect Executor is ready, but get failed result.")
 	}
 	ssh.Destory()
 }

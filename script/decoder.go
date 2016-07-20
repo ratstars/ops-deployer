@@ -76,7 +76,7 @@ func (d *Decoder) DecodeReader(in io.Reader) (Scripter, error) {
 func checkDumplicatedExecutorName(executors []ExecutorDescriber) error {
 	executorNameSet := make(map[string]bool)
 	for _, v := range executors {
-		if executorNameSet[v.Name] == false {
+		if _, ok := executorNameSet[v.Name]; false == ok {
 			executorNameSet[v.Name] = true
 		} else {
 			return errors.New("Executors' Name Dumplicated: "+v.Name)
@@ -95,7 +95,7 @@ func checkExecutorNameInCommand(script *Scripter) error {
 		if true == v.IsComment {
 			continue
 		}
-		if executorNameSet[v.ExecutorName] != true {
+		if _, ok := executorNameSet[v.ExecutorName]; false == ok {
 			// 没有定义executor
 			return errors.New("Executor Not Define: "+v.ExecutorName)
 		}

@@ -21,6 +21,7 @@
 // in 60表示执行会在60s内结束, 如果超过这个时间应会照时
 // expect regular_expression 希望出现的正则表达式
 // 也可以写成unexpect regular_expression 表示不希望出现的正则表达式
+// 如果没有expect或unexpect，则认为执行指令希望没有输出，有输出认为是错误的
 // #开头的行为注释行，在系统执行的过程中表示要暂停提示
 // 注意，分词只支持空格不支持制表符等不可见字符
 package script
