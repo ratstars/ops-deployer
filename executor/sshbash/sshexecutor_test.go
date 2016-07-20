@@ -142,9 +142,12 @@ func TestExecute(t *testing.T) {
 		t.Error("Expect Nothing Return")
 		return
 	}
+<<<<<<< HEAD
 	ssh.Destory()
 	if true == ssh.IsLogin() {
 		t.Error("Expect Logout, but get IsLogin() == true. ")
 		return
 	}
+=======
+>>>>>>> 399d20b3dbfee7db710710762e85a3fc739fc0af
 }
