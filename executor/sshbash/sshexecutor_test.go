@@ -144,7 +144,7 @@ func TestExecute(t *testing.T) {
 	}
 	ssh.Destory()
 	if true == ssh.IsLogin() {
-		t.Error("Expect Logout Successful Again, but get IsLogin() == true. ")
+		t.Error("Expect Logout, but get IsLogin() == true. ")
 		return
 	}
 }
