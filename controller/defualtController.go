@@ -7,6 +7,7 @@ import (
 	"github.com/ratstars/ops-deployer/view"
 	"log"
 	"errors"
+	"regexp"
 )
 
 type DefaultController struct{
@@ -28,9 +29,21 @@ func (*invalidConfirmer) DisplayAndPause(info string){
 	log.Print("ERROR: Invalid Confirmer be invoke.")
 }
 
+//空视图器, 不会显示任何东西
+type nothingToDoView struct {}
+
+func (v *nothingToDoView) NotifyDisplay(result []commons.ResultOutput, isOK bool){
+	;
+}
+
+
+
 func (dc *DefaultController) RunScript(script script.Scripter) error {
 	if nil == dc.Confirmer {
 		dc.Confirmer = &invalidConfirmer{}
+	}
+	if nil == dc.View {
+		dc.View = &nothingToDoView{}
 	}
 	// 1. 新建各执行器, 并将执行各执行器初始化
 	
@@ -79,8 +92,8 @@ func (dc *DefaultController) RunScript(script script.Scripter) error {
 				return errors.New("Executor Not Define")
 			}
 			if 0 <= cmd.Timeout{
-				// 没有设置超时时间, 则将超时时间设置为10s
-				cmd.Timeout = 10
+				// 没有设置超时时间, 则将超时时间设置为60s
+				cmd.Timeout = 60
 			}
 			result, err := executor.Execute(cmd.Command, cmd.Timeout)
 			if err != nil {
@@ -94,7 +107,7 @@ func (dc *DefaultController) RunScript(script script.Scripter) error {
 			}
 			if false == ok {
 				//执行失败, 不再执行后续指令
-				break
+				return errors.New("Unexpect result, controller stops.")
 			}
 		}
 	}
@@ -102,6 +115,42 @@ func (dc *DefaultController) RunScript(script script.Scripter) error {
 }
 
 func checkResult(result []commons.ResultOutput, cmd *script.CommandDescriber) bool {
-	//TODO
+	expect := cmd.ExpectRegular
+	unexpect := cmd.UnexpectRegular
+	
+	//检查是否有不期望的字符存在
+	if unexpect != "" {
+		reg_unexp, err := regexp.Compile(unexpect)
+		if err != nil {
+			log.Println("Unexpect Regular Expression Compile Error:", cmd.ExecutorName)
+			return false
+		}
+		for _, v := range result {
+			is_matched := reg_unexp.MatchString(v.String())
+			if true == is_matched{
+				return false
+			}
+		}
+	}
+	
+	//如果没有expect信息，返回成功
+	if "" == expect {
+		return true
+	}
+	
+	//检查是否有希望的字符存在
+	if expect != "" {
+		reg_exp, err := regexp.Compile(expect)
+		if err != nil {
+			log.Println("Expect Regular Expressioin Compile Error:", cmd.ExecutorName)
+			return false
+		}
+		for _, v := range result{
+			is_matched := reg_exp.MatchString(v.String())
+			if true == is_matched {
+				return true
+			}
+		}
+	}
 	return false
 }
