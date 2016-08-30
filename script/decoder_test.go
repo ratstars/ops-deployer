@@ -132,7 +132,6 @@ func TestDecodeCommand3(t *testing.T) {
 			"   executor1 echo ABCD\n" +
 			"in 60  expect ABCD"
 	d := Decoder{}
-	_, err := d.Decode(input)
 	script1, err := d.Decode(input)
 	if err != nil {
 		t.Error("Decode Error: ", err)

@@ -7,9 +7,9 @@ import (
 )
 
 type sshBashUserInfo struct {
-	ip       string
-	username string
-	password string
+	Ip       string `json:"ip"`
+	Username string `json:"username"`
+	Password string `json:"password"`
 }
 
 func CreateExecutor(types string, args string) (Executor, error) {
@@ -27,9 +27,9 @@ func SSHBashExecutorCreator(args string) (*sshbash.SshExecutor, error) {
 	if err != nil {
 		return nil, err
 	}
-	ip := sshInfo.ip
-	username := sshInfo.username
-	password := sshInfo.password
+	ip := sshInfo.Ip
+	username := sshInfo.Username
+	password := sshInfo.Password
 	if "" == ip {
 		return nil, errors.New("SSHBASH Executor Args Error, Expect ip.")
 	}
