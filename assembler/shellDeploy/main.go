@@ -3,6 +3,11 @@ package main
 import (
 	"flag"
 	"fmt"
+	"github.com/ratstars/ops-deployer/controller"
+	"github.com/ratstars/ops-deployer/script"
+	"github.com/ratstars/ops-deployer/view"
+	"io/ioutil"
+	"os"
 )
 
 const APP_VERSION = "0.1"
@@ -24,4 +29,36 @@ func main() {
 		flag.Usage()
 		return
 	}
+
+	//1. open script file
+	bytes, err := ioutil.ReadFile(*scriptFlag)
+	if err != nil {
+		fmt.Errorf("File Open Failed. %v\n", err)
+		os.Exit(-1)
+		return
+	}
+	content := string(bytes)
+
+	//2. create Decoder and decode script texts
+	decoder := &script.Decoder{}
+	script, err := decoder.Decode(content)
+	if err != nil {
+		fmt.Errorf("Decode Script Files Error. %v\n", err)
+		os.Exit(-1)
+		return
+	}
+
+	//3. create View
+	view := &view.ShellView{}
+	//4. create Controller
+	ctrler := controller.DefaultController{
+		Confirmer: view,
+		View:      view,
+	}
+	//5. run script and print result.
+	err = ctrler.RunScript(script)
+	if err != nil {
+		fmt.Errorf("Run Script Error. %v\n", err)
+	}
+	fmt.Println("Script Execution Finished. ")
 }

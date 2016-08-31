@@ -3,6 +3,7 @@ package view
 import (
 	"fmt"
 	"github.com/ratstars/ops-deployer/executor/commons"
+	"github.com/ratstars/ops-deployer/script"
 	"strings"
 )
 
@@ -27,11 +28,23 @@ func (s *ShellView) DisplayAndPause(info string) {
 	fmt.Scanln(&input)
 }
 
-func (*ShellView) NotifyDisplay(result []commons.ResultOutput, isOK bool) {
+func (*ShellView) NotifyDisplay(cmd *script.CommandDescriber, result []commons.ResultOutput, isOK bool) {
 	fmt.Println("===========================")
-	for _, line := range result {
-		fmt.Printf("[%s]", line.Type())
-		fmt.Println(line.String())
+	fmt.Println("[CMD]", cmd.Command)
+	if cmd.ExpectRegular != "" {
+		fmt.Println("[EXPECT]", cmd.ExpectRegular)
+	}
+	if cmd.UnexpectRegular != "" {
+		fmt.Println("[UNEXPECT]", cmd.UnexpectRegular)
+	}
+	if cmd.Timeout > 0 {
+		fmt.Println("[IN SECOND]", cmd.Timeout)
+	}
+	if result != nil {
+		for _, line := range result {
+			fmt.Printf("[%s]", line.Type())
+			fmt.Println(line.String())
+		}
 	}
 	if true == isOK {
 		fmt.Println("==========SUCCESS==========")

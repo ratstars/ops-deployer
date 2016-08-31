@@ -6,8 +6,8 @@ import (
 	"errors"
 	"io"
 	"log"
-	"strings"
 	"strconv"
+	"strings"
 )
 
 // 脚本解析器
@@ -19,6 +19,7 @@ func (d *Decoder) Decode(input string) (Scripter, error) {
 	return d.DecodeReader(strings.NewReader(input))
 }
 
+// 解析输入的脚本, 但输入为Reader, Reader需要用户自己管理
 func (d *Decoder) DecodeReader(in io.Reader) (Scripter, error) {
 	var scripter Scripter
 	scripter.Executors = make([]ExecutorDescriber, 0, 5)
@@ -64,7 +65,7 @@ func (d *Decoder) DecodeReader(in io.Reader) (Scripter, error) {
 		return Scripter{}, err
 	}
 	// 检查cmd的执行器名字的有效性
-	err = checkExecutorNameInCommand(&scripter) 
+	err = checkExecutorNameInCommand(&scripter)
 	if err != nil {
 		log.Println("Command's executor error.", err)
 		return Scripter{}, err
@@ -79,7 +80,7 @@ func checkDumplicatedExecutorName(executors []ExecutorDescriber) error {
 		if _, ok := executorNameSet[v.Name]; false == ok {
 			executorNameSet[v.Name] = true
 		} else {
-			return errors.New("Executors' Name Dumplicated: "+v.Name)
+			return errors.New("Executors' Name Dumplicated: " + v.Name)
 		}
 	}
 	return nil
@@ -97,7 +98,7 @@ func checkExecutorNameInCommand(script *Scripter) error {
 		}
 		if _, ok := executorNameSet[v.ExecutorName]; false == ok {
 			// 没有定义executor
-			return errors.New("Executor Not Define: "+v.ExecutorName)
+			return errors.New("Executor Not Define: " + v.ExecutorName)
 		}
 	}
 	return nil
@@ -207,9 +208,9 @@ func decodeCommand(lines *[]string, commands *[]CommandDescriber) error {
 func decodeComment(lines *[]string, commands *[]CommandDescriber) {
 	line := (*lines)[0]
 	comment := strings.TrimSpace(strings.TrimPrefix(strings.TrimSpace(line), "#"))
-	cmd := CommandDescriber {
+	cmd := CommandDescriber{
 		IsComment: true,
-		Command: comment,
+		Command:   comment,
 	}
 	*lines = (*lines)[1:]
 	*commands = append(*commands, cmd)
@@ -217,7 +218,7 @@ func decodeComment(lines *[]string, commands *[]CommandDescriber) {
 
 // 按sep切分s，但如果切分出的子串有空串，会删除空串
 // 对于res小于等于0的情况，会返回nil而不是空串
-func NoEmptySplitN(s string, res int) [] string {
+func NoEmptySplitN(s string, res int) []string {
 	if res <= 0 {
 		return nil
 	}
@@ -237,6 +238,6 @@ func NoEmptySplitN(s string, res int) [] string {
 		return slice
 	}
 	slice = append(slice, part[0])
-	slice = append(slice, NoEmptySplitN(strings.TrimSpace(part[1]), res -1)...)
+	slice = append(slice, NoEmptySplitN(strings.TrimSpace(part[1]), res-1)...)
 	return slice
 }
