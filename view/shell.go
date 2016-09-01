@@ -52,3 +52,7 @@ func (*ShellView) NotifyDisplay(cmd *script.CommandDescriber, result []commons.R
 		fmt.Println("==========FAILED===========")
 	}
 }
+
+func (*ShellView) DisplayInfo(info string) {
+	fmt.Println(info)
+}

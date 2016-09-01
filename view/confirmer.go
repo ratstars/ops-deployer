@@ -12,4 +12,5 @@ type Confirmer interface {
 
 type View interface {
 	NotifyDisplay(cmd *script.CommandDescriber, result []commons.ResultOutput, isOK bool)
+	DisplayInfo(info string)
 }

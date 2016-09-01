@@ -3,10 +3,9 @@ package main
 import (
 	"flag"
 	"fmt"
-	"github.com/ratstars/ops-deployer/controller"
-	"github.com/ratstars/ops-deployer/script"
+	"github.com/ratstars/ops-deployer/assembler"
 	"github.com/ratstars/ops-deployer/view"
-	"io/ioutil"
+	"log"
 	"os"
 )
 
@@ -29,36 +28,37 @@ func main() {
 		flag.Usage()
 		return
 	}
-
-	//1. open script file
-	bytes, err := ioutil.ReadFile(*scriptFlag)
+	//1. change Log
+	file, err := os.OpenFile("shellDeployer.log", os.O_CREATE|os.O_APPEND, 0)
 	if err != nil {
-		fmt.Errorf("File Open Failed. %v\n", err)
+		fmt.Errorf("Can not open log file. Log will output to stdout and stderr.")
+	}
+	defer func() {
+		if file != nil {
+			file.Close()
+		}
+	}()
+	log.SetOutput(file)
+
+	//2. open script
+	script_file, err := os.Open(*scriptFlag)
+	if err != nil {
+		fmt.Errorf("Open Script File Error. %v", err)
 		os.Exit(-1)
 		return
 	}
-	content := string(bytes)
+	defer script_file.Close()
 
-	//2. create Decoder and decode script texts
-	decoder := &script.Decoder{}
-	script, err := decoder.Decode(content)
-	if err != nil {
-		fmt.Errorf("Decode Script Files Error. %v\n", err)
-		os.Exit(-1)
-		return
-	}
-
-	//3. create View
+	//3. create View and Confirmer
 	view := &view.ShellView{}
-	//4. create Controller
-	ctrler := controller.DefaultController{
+
+	//4. create assembler and run
+	deployer := &assembler.ShellDeployer{
 		Confirmer: view,
 		View:      view,
 	}
-	//5. run script and print result.
-	err = ctrler.RunScript(script)
-	if err != nil {
-		fmt.Errorf("Run Script Error. %v\n", err)
-	}
-	fmt.Println("Script Execution Finished. ")
+
+	i := deployer.Run(script_file)
+	os.Exit(i)
+	return
 }

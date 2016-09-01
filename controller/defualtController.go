@@ -32,7 +32,11 @@ func (*invalidConfirmer) DisplayAndPause(info string) {
 //空视图器, 不会显示任何东西
 type nothingToDoView struct{}
 
-func (v *nothingToDoView) NotifyDisplay(cmd *script.CommandDescriber, result []commons.ResultOutput, isOK bool) {
+func (*nothingToDoView) NotifyDisplay(cmd *script.CommandDescriber, result []commons.ResultOutput, isOK bool) {
+
+}
+
+func (*nothingToDoView) DisplayInfo(info string) {
 
 }
 
@@ -90,7 +94,7 @@ func (dc *DefaultController) RunScript(script script.Scripter) error {
 				return errors.New("Executor Not Define")
 			}
 			if 0 >= cmd.Timeout {
-				// 没有设置超时时间, 则将超时时间设置为60s
+				// 没有设置超时时间, 则将超时时间设置为1分钟
 				cmd.Timeout = 60
 			}
 			result, err := executor.Execute(cmd.Command, cmd.Timeout)
