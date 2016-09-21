@@ -97,7 +97,7 @@ func (sshe *SshExecutor) Init() {
 		sshe.clearSessionAndClientWhenError("Failed to create session: ", err)
 		return
 	}
-	
+
 	//重定向输入输出
 	sshe.prompt_notify = make(chan int)
 	sshe.session.Stdout = newDecoratorWriterForNofityer(
@@ -275,12 +275,14 @@ type decoratorWriterForNofityer struct {
 // 装饰者的Write方法, 这个方法会将特定的提示符过滤不输出, 并在特定提示符出现时,
 // 给通道发送通知
 func (w *decoratorWriterForNofityer) Write(p []byte) (n int, err error) {
+	//是否通知调用者可以取数据了
+	needNotify := false
 	w.cache = []byte(string(w.cache) + string(p))
 	// 从之前的输出中找特定提示符
 	inx := bytes.Index(w.cache, promptings)
 	if inx > -1 {
-		//如果找到提示符, 通过ch进行通知
-		w.ch <- 1
+		//如果找到提示符, 将needNotify改成true, 之后通过ch进行通知
+		needNotify = true
 		w.cache = make([]byte, 0)
 	}
 	// 输出内容, 但'\033'开始一直到特定提示符之前的文字, 不进行输出
@@ -297,6 +299,9 @@ func (w *decoratorWriterForNofityer) Write(p []byte) (n int, err error) {
 		}
 	} else {
 		_, err = w.w.Write(p)
+	}
+	if true == needNotify {
+		w.ch <- 1
 	}
 	return len(p), err
 }
