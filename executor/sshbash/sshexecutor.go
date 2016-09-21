@@ -61,6 +61,81 @@ type SshExecutor struct {
 	prompt_notify chan int
 }
 
+// 输入输出类型, 为OutputBuffer.buffByteType所用
+const (
+	UNKNOWN = 0
+	STDOUT  = 1
+	STDERR  = 2
+)
+
+//一次输入的片段
+type OutputBufferPiece struct {
+	buffType int
+	content  []byte
+}
+
+//创建一个新的
+func NewOutputBufferPiece(buffType int, content []byte) OutputBufferPiece {
+	c := make([]byte, len(content))
+	for i, v := range content {
+		c[i] = v
+	}
+	return OutputBufferPiece{
+		buffType: buffType,
+		content:  c,
+	}
+}
+
+//输入穿冲区,这个穿冲区的读写都会多线程安全的
+type OutputBuffer struct {
+	mu          sync.Mutex
+	contentBuff []OutputBufferPiece
+}
+
+//写入一个缓冲区数据
+func (buff *OutputBuffer) Write(piece OutputBufferPiece) {
+	buff.mu.Lock()
+	defer buff.mu.Unlock()
+	buff.contentBuff = append(buff.contentBuff, piece)
+}
+
+//重组缓冲区片段, 如果连续的片段类型相同, 它将合成一个大的片段, 以保证不出现意外的换行
+//这种换行在真实执行指令时是不存在的
+func reorgBufferPiece(ori []OutputBufferPiece) []OutputBufferPiece {
+	if len(ori) <= 1 {
+		return ori
+	}
+	//要返回的空slice
+	result := make([]OutputBufferPiece, 0)
+	//将每一个取出
+	tmp := ori[0]
+	//查看后边每一个(当前值)是否与tmp相同类型
+	for i := 1; i < len(ori); i++ {
+		p := ori[i]
+		if p.buffType == tmp.buffType {
+			//如果内容相同, 将当前值加入tmp的内容中
+			tmp.content = append(tmp.content, p.content...)
+		} else {
+			//否则将tmp加入到result后,当前值设为tmp
+			result := append(result, tmp)
+			tmp = p
+		}
+	}
+	//将tmp加入result
+	result := append(result, tmp)
+}
+
+//获取输出结果, 并将返回清空
+func (buff *OutputBuffer) GetOutputAndClear() []commons.ResultOutput {
+	result := make([]commons.ResultOutput, 0, 20)
+	buff.mu.Lock()
+	defer buff.mu.Unlock()
+	// TODO 将contentBuff组合成ResultOutput返回
+	return result
+}
+
+// ==========================TODO====================================
+
 //初始化SSH执行器
 func (sshe *SshExecutor) Init() {
 	//如果已经初始化, 只是返回
@@ -97,7 +172,7 @@ func (sshe *SshExecutor) Init() {
 		sshe.clearSessionAndClientWhenError("Failed to create session: ", err)
 		return
 	}
-	
+
 	//重定向输入输出
 	sshe.prompt_notify = make(chan int)
 	sshe.session.Stdout = newDecoratorWriterForNofityer(
