@@ -344,6 +344,7 @@ func (buff *MixWriterBuffer) Add(resultOutput commons.ResultOutput, isLineFinish
 		}
 	}
 	buff.outputSlice = append(buff.outputSlice, resultOutput)
+	buff.lastLineFinish = isLineFinished
 }
 
 //获取Buffer的输出结果, 并清空
