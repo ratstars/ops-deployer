@@ -1,7 +1,10 @@
 package commons
 
-import (
+import ()
 
+const (
+	OUTPUT_INFO  = "INFO"
+	OUTPUT_ERROR = "ERROR"
 )
 
 type ResultOutput interface {
@@ -13,11 +16,11 @@ type StderrOutput struct {
 	content string
 }
 
-func (out StderrOutput) Type() string{
-	return "ERROR"
+func (out StderrOutput) Type() string {
+	return OUTPUT_ERROR
 }
 
-func (out StderrOutput) String() string{
+func (out StderrOutput) String() string {
 	return out.content
 }
 
@@ -31,11 +34,11 @@ type StdoutOutput struct {
 	content string
 }
 
-func (out StdoutOutput) Type() string{
-	return "INFO"
+func (out StdoutOutput) Type() string {
+	return OUTPUT_INFO
 }
 
-func (out StdoutOutput) String() string{
+func (out StdoutOutput) String() string {
 	return out.content
 }
 
@@ -46,7 +49,7 @@ func NewStdoutOutput(content string) ResultOutput {
 }
 
 type CustomOutput struct {
-	types string
+	types   string
 	content string
 }
 
@@ -60,13 +63,13 @@ func (out CustomOutput) String() string {
 
 func NewCustomOutput(types, content string) ResultOutput {
 	return CustomOutput{
-		types: types,
+		types:   types,
 		content: content,
 	}
 }
 
-func Merge(a, b ResultOutput) ResultOutput{
-	content := a.String()+b.String()
+func Merge(a, b ResultOutput) ResultOutput {
+	content := a.String() + b.String()
 	types := a.Type()
 	return NewCustomOutput(types, content)
 }

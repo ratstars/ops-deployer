@@ -457,10 +457,8 @@ func (w *BufferWriter) Write(p []byte) (int, error) {
 		if i < len(sep)-1 {
 			// 非最后一行
 			w.buff.Add(w.resultFunc(strings.TrimRight(line, "\r")), true)
-			log.Println("DEBUG : not last line")
 		} else {
 			w.buff.Add(w.resultFunc(strings.TrimRight(line, "\r")), lastLineFinished)
-			log.Println("DEBUG : lastLineFinished=", lastLineFinished)
 		}
 	}
 	return len(p), nil
